@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fichas de Matemáticas</title>
+<style>
+  :root {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --card-bg: #ffffff;
+    --card-front: #ffffff;
+    --card-back: #fdf5f5;
+    --accent: #5046e5;
+    --accent2: #7c3aed;
+    --answer-red: #c0161a;
+    --text: #1a1d2e;
+    --text-dim: #6b7280;
+    --border: #d1d5e0;
+    --correct: #16a34a;
+    --incorrect: #dc2626;
+    --btn-active: #5046e5;
+    --btn-hover: #eef0f8;
+    --shadow: 0 4px 24px rgba(0,0,0,0.10);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent2); letter-spacing: -0.5px; white-space: nowrap; }
+  .logo span { color: var(--text-dim); font-weight: 400; font-size: 0.9rem; margin-left: 6px; }
+
+  /* Progress bar */
+  .progress-section {
+    background: var(--surface);
+    padding: 10px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .progress-stats {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 8px;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+  .stat { display: flex; align-items: center; gap: 5px; }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .stat-dot.correct { background: var(--correct); }
+  .stat-dot.incorrect { background: var(--incorrect); }
+  .stat-dot.remaining { background: var(--text-dim); }
+  .stat strong { color: var(--text); }
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+  }
+  .progress-fill-correct {
+    background: var(--correct);
+    height: 100%;
+    transition: width 0.4s ease;
+  }
+  .progress-fill-incorrect {
+    background: var(--incorrect);
+    height: 100%;
+    transition: width 0.4s ease;
+  }
+
+  /* Filter buttons */
+  .filters {
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .filter-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+  .filter-btn {
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-btn:hover { background: var(--btn-hover); color: var(--text); }
+  .filter-btn.active { background: var(--btn-active); border-color: var(--btn-active); color: #fff; font-weight: 600; }
+
+  /* Controls */
+  .controls {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn:hover { background: var(--btn-hover); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.primary:hover { background: #5a52e0; }
+  .kbd-hint { font-size: 0.72rem; color: var(--text-dim); margin-left: auto; }
+  kbd {
+    background: var(--border);
+    border: 1px solid #b0b8cc;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.7rem;
+    font-family: monospace;
+  }
+
+  /* Card counter */
+  .card-counter {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    padding: 0 6px;
+  }
+
+  /* Main card area */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  /* Flashcard */
+  .card-wrap {
+    width: 100%;
+    max-width: 680px;
+    perspective: 1200px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card {
+    width: 100%;
+    min-height: 280px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute;
+    width: 100%;
+    min-height: 280px;
+    border-radius: var(--radius);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .card-front {
+    background: var(--card-front);
+  }
+  .card-back {
+    background: var(--card-back);
+    transform: rotateY(180deg);
+    border-color: #f5c0c0;
+  }
+  .card-label {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.5;
+  }
+  .card-subject {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 0.68rem;
+    color: var(--accent2);
+    opacity: 0.7;
+    max-width: 200px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-text {
+    font-size: 1.18rem;
+    line-height: 1.65;
+    text-align: center;
+    color: var(--text);
+  }
+  .card-back .card-text {
+    color: var(--answer-red);
+    font-size: 1.18rem;
+    font-weight: 500;
+  }
+  .card-hint {
+    position: absolute;
+    bottom: 14px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+
+  /* Action buttons */
+  .action-area {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+    max-width: 680px;
+    justify-content: center;
+  }
+  .action-btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    border: 2px solid;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .action-btn.correct-btn {
+    background: rgba(34,197,94,0.1);
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+  .action-btn.correct-btn:hover {
+    background: rgba(34,197,94,0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+  }
+  .action-btn.incorrect-btn {
+    background: rgba(239,68,68,0.1);
+    border-color: var(--incorrect);
+    color: var(--incorrect);
+  }
+  .action-btn.incorrect-btn:hover {
+    background: rgba(239,68,68,0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+  }
+  .action-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Navigation */
+  .nav-area {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .nav-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--btn-hover); border-color: var(--accent); }
+
+  /* Celebration */
+  .celebration {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+  .celebration.show { display: flex; }
+  .celebration h2 { font-size: 2.5rem; color: var(--accent2); }
+  .celebration p { color: var(--text-dim); font-size: 1.1rem; }
+  .confetti { font-size: 3rem; animation: bounce 0.6s infinite alternate; }
+  @keyframes bounce { from {transform: translateY(0);} to {transform: translateY(-20px);} }
+
+  /* Empty state */
+  .empty-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .empty-state.show { display: flex; }
+  .empty-icon { font-size: 3rem; }
+
+  @media (max-width: 600px) {
+    .card-text { font-size: 1rem; }
+    .card-face { padding: 28px 20px; min-height: 240px; }
+    .action-area { gap: 8px; }
+    .action-btn { padding: 12px 14px; font-size: 0.9rem; }
+    .kbd-hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📐 Fichas Math <span>466 tarjetas · 5 materias</span></div>
+</header>
+
+<div class="progress-section">
+  <div class="progress-stats">
+    <div class="stat"><div class="stat-dot correct"></div><strong id="stat-correct">0</strong> correctas</div>
+    <div class="stat"><div class="stat-dot incorrect"></div><strong id="stat-incorrect">0</strong> incorrectas</div>
+    <div class="stat"><div class="stat-dot remaining"></div><strong id="stat-remaining">0</strong> restantes</div>
+    <div class="stat" style="margin-left:auto; color: var(--text-dim);"><span id="stat-total-label"></span></div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill-correct" id="prog-correct" style="width:0%"></div>
+    <div class="progress-fill-incorrect" id="prog-incorrect" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">Materia:</span>
+  <button class="filter-btn active" data-filter="all">Todas</button>
+  <button class="filter-btn" data-filter="Precálculo">Precálculo</button>
+  <button class="filter-btn" data-filter="Cálculo Diferencial">Cálculo Diferencial</button>
+  <button class="filter-btn" data-filter="Cálculo Integral">Cálculo Integral</button>
+  <button class="filter-btn" data-filter="Álgebra Lineal">Álgebra Lineal</button>
+  <button class="filter-btn" data-filter="Álgebra, Trig. y Geom.">Álg. Trig. Geom.</button>
+</div>
+
+<div class="controls">
+  <button class="btn primary" id="btn-shuffle">🔀 Mezclar</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar progreso</button>
+  <span class="card-counter" id="card-counter">— / —</span>
+  <div class="kbd-hint">
+    <kbd>Espacio</kbd> voltear &nbsp;
+    <kbd>S</kbd> correcta &nbsp;
+    <kbd>N</kbd> incorrecta &nbsp;
+    <kbd>←</kbd><kbd>→</kbd> navegar
+  </div>
+</div>
+
+<main>
+  <div class="card-wrap" id="card-wrap" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="card-face card-front">
+        <span class="card-label">Pregunta</span>
+        <span class="card-subject" id="card-subject-front"></span>
+        <div class="card-text" id="card-question"></div>
+        <span class="card-hint">clic o Espacio para ver respuesta</span>
+      </div>
+      <div class="card-face card-back">
+        <span class="card-label" style="color:var(--accent2)">Respuesta</span>
+        <span class="card-subject" id="card-subject-back"></span>
+        <div class="card-text" id="card-answer"></div>
+        <span class="card-hint">S = correcta · N = incorrecta</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-area" id="action-area">
+    <div class="nav-area">
+      <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" title="Anterior (←)">‹</button>
+    </div>
+    <button class="action-btn incorrect-btn" id="btn-incorrect" onclick="markCard(false)" disabled>✗ Incorrecta</button>
+    <button class="action-btn correct-btn" id="btn-correct" onclick="markCard(true)" disabled>✓ Correcta</button>
+    <div class="nav-area">
+      <button class="nav-btn" id="btn-next" onclick="navigate(1)" title="Siguiente (→)">›</button>
+    </div>
+  </div>
+
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">🎯</div>
+    <h3>No hay tarjetas para este filtro</h3>
+    <p>Selecciona otra categoría.</p>
+  </div>
+</main>
+
+<div class="celebration" id="celebration">
+  <div class="confetti">🎉</div>
+  <h2>¡Felicitaciones!</h2>
+  <p id="celebration-msg">Completaste todas las tarjetas.</p>
+  <button class="btn primary" onclick="hideCelebration()" style="margin-top:10px; font-size:1rem; padding: 12px 28px;">Continuar</button>
+</div>
+
+<script>
+const ALL_CARDS = [{"subject":"Precálculo","q":"Según la notación exponencial, ¿cómo se escribe el producto de números idénticos como 5 · 5 · 5?","a":"Se escribe como 5³."},{"subject":"Precálculo","q":"Para un exponente racional a^(m/n), ¿qué representa el denominador n?","a":"El denominador n representa la raíz n-ésima, como en (ⁿ√(a))ᵐ o ⁿ√(aᵐ)."},{"subject":"Precálculo","q":"Complete la propiedad de los radicales: Si b ≥ 0, entonces ⁿ√(bⁿ) = _____.","a":"b"},{"subject":"Precálculo","q":"Para sumar o restar expresiones racionales, primero encontramos un _____ y luego usamos la propiedad (A/C) ± (B/C) = (A ± B/C).","a":"denominador común"},{"subject":"Precálculo","q":"Al resolver una ecuación, ¿qué es una 'solución extraña'?","a":"Es una solución potencial que no satisface la ecuación original."},{"subject":"Precálculo","q":"¿Por qué la operación de elevar al cuadrado cada lado de una ecuación puede introducir soluciones extrañas?","a":"Porque puede convertir una ecuación falsa en una verdadera (por ejemplo, -1 ≠ 1, pero (-1)² = 1²)."},{"subject":"Precálculo","q":"¿Cuál es la fórmula para el interés simple?","a":"I = Prt, donde I es el interés, P es el capital, r es la tasa de interés y t es el tiempo."},{"subject":"Precálculo","q":"La desigualdad de valor absoluto |x| < c (para c>0) es equivalente a la doble desigualdad _____.","a":"-c < x < c"},{"subject":"Precálculo","q":"La desigualdad de valor absoluto |x| > c (para c>0) es equivalente a _____.","a":"x < -c o x > c"},{"subject":"Precálculo","q":"¿Cuál es la ecuación de una circunferencia con centro en (h, k) y radio r?","a":"(x - h)² + (y - k)² = r²"},{"subject":"Precálculo","q":"La gráfica de una ecuación de la forma y = mx + b es una recta con pendiente _____ y punto de intersección con el eje y en _____.","a":"m, b"},{"subject":"Precálculo","q":"¿Cuál es la condición, en términos de sus pendientes m₁ y m₂, para que dos rectas no verticales sean perpendiculares?","a":"El producto de sus pendientes es -1, es decir, m₁ m₂ = -1."},{"subject":"Precálculo","q":"¿Qué es el dominio de una función?","a":"Es el conjunto de todas las entradas posibles (valores de x) para las cuales la función está definida."},{"subject":"Precálculo","q":"¿Qué es una función definida por tramos?","a":"Es una función que se define por diferentes fórmulas en diferentes partes de su dominio."},{"subject":"Precálculo","q":"Si hay un rectángulo de vista tal que (a, f(a)) es el punto más alto en la gráfica de f dentro de ese rectángulo, entonces f(a) es un _____.","a":"valor máximo local"},{"subject":"Precálculo","q":"La expresión (f(a+h) - f(a)/h) se conoce como el _____ de la función f.","a":"cociente de diferencias"},{"subject":"Precálculo","q":"¿Cómo se obtiene la gráfica de y = f(x) + c a partir de la gráfica de y = f(x) si c > 0?","a":"Se desplaza la gráfica de y=f(x) hacia arriba c unidades."},{"subject":"Precálculo","q":"¿Cómo se obtiene la gráfica de y = f(x - c) a partir de la gráfica de y = f(x) si c > 0?","a":"Se desplaza la gráfica de y=f(x) hacia la derecha c unidades."},{"subject":"Precálculo","q":"Si c > 1, la gráfica de y = cf(x) se obtiene _____ la gráfica de y = f(x) verticalmente en un factor de c.","a":"estirando"},{"subject":"Precálculo","q":"Si 0 < c < 1, la gráfica de y = f(cx) se obtiene _____ la gráfica de y = f(x) horizontalmente en un factor de 1/c.","a":"alargando"},{"subject":"Precálculo","q":"¿Cómo se define la función compuesta (f ∘ g)(x)?","a":"Se define como (f ∘ g)(x) = f(g(x))."},{"subject":"Precálculo","q":"¿Qué es una función uno a uno?","a":"Es una función que nunca toma el mismo valor dos veces; es decir, f(x₁) ≠ f(x₂) siempre que x₁ ≠ x₂."},{"subject":"Precálculo","q":"¿Cómo se llama la prueba gráfica que se utiliza para determinar si una función es uno a uno?","a":"La prueba de la recta horizontal."},{"subject":"Precálculo","q":"Si f es una función uno a uno con dominio A y rango B, ¿cuáles son el dominio y el rango de su función inversa f⁻¹?","a":"La función inversa f⁻¹ tiene dominio B y rango A."},{"subject":"Precálculo","q":"La definición de la función inversa establece que f⁻¹(y) = x ⟺ _____.","a":"f(x) = y"},{"subject":"Precálculo","q":"La gráfica de f⁻¹ se obtiene reflejando la gráfica de f sobre la recta _____.","a":"y = x"},{"subject":"Precálculo","q":"Si P(x) es una función polinomial de grado n, ¿cuál es el número máximo de extremos locales que puede tener la gráfica de P?","a":"La gráfica de P tiene a lo sumo n-1 extremos locales."},{"subject":"Precálculo","q":"Enuncie el Teorema del Residuo.","a":"Si el polinomio P(x) se divide entre x-c, entonces el residuo es el valor P(c)."},{"subject":"Precálculo","q":"Enuncie el Teorema del Factor.","a":"c es un cero de P si y sólo si x-c es un factor de P(x)."},{"subject":"Precálculo","q":"Un número complejo es un número de la forma _____, donde a y b son números reales y i² = -1.","a":"a + bi"},{"subject":"Precálculo","q":"En el número complejo a + bi, ¿cómo se llama la parte a y la parte b?","a":"a es la parte real y b es la parte imaginaria."},{"subject":"Precálculo","q":"Si los ceros complejos de una función polinomial con coeficientes reales se presentan en pares, ¿cómo se llaman estos pares?","a":"Pares conjugados complejos."},{"subject":"Precálculo","q":"Una función de la forma f(x) = aˣ, donde a > 0 y a ≠ 1, se denomina _____.","a":"función exponencial"},{"subject":"Precálculo","q":"¿Cuál es la fórmula para el interés compuesto n veces al año?","a":"A(t) = P(1 + (r/n))ⁿᵗ"},{"subject":"Precálculo","q":"La fórmula para el interés capitalizado continuamente es A(t) = _____.","a":"Peʳᵗ"},{"subject":"Precálculo","q":"Exprese la relación entre la forma logarítmica y la forma exponencial.","a":"logₐ x = y es equivalente a a^y = x."},{"subject":"Precálculo","q":"La Ley 3 de los logaritmos, también conocida como la ley de \"bajar el exponente\", establece que logₐ(A^C) = _____.","a":"C logₐ(A)"},{"subject":"Precálculo","q":"La Ley de Beer-Lambert relaciona la intensidad de la luz antes (I₀) y después (I) de pasar por un material. La fórmula para la constante k es _____.","a":"k = (1/x) ln((I₀/I))"},{"subject":"Precálculo","q":"La escala de pH se define como pH = -log[H⁺], donde [H⁺] es la concentración de _____.","a":"iones de hidrógeno"},{"subject":"Precálculo","q":"Las funciones seno y coseno son periódicas. ¿Cuál es su período fundamental?","a":"Su período es 2π."},{"subject":"Precálculo","q":"Para las funciones y = a sin(kx) y y = a cos(kx), la amplitud es |a| y el período es _____.","a":"(2π/k)"},{"subject":"Precálculo","q":"En la función y = a sin k(x-b), el número b se llama _____.","a":"desfase"},{"subject":"Precálculo","q":"Una ecuación que describe el movimiento armónico simple, donde el desplazamiento máximo ocurre en t=0, tiene la forma _____.","a":"y = a cos(ω t)"},{"subject":"Precálculo","q":"El movimiento de un objeto que vibra y cuya amplitud disminuye con el tiempo debido a fuerzas de fricción se llama _____.","a":"movimiento armónico amortiguado"},{"subject":"Precálculo","q":"En un círculo de radio r, la longitud de un arco s que subtiende un ángulo central θ (en radianes) es s = _____.","a":"rθ"},{"subject":"Precálculo","q":"El área A de un sector de un círculo con radio r y ángulo central θ (en radianes) está dada por la fórmula _____.","a":"A = (1/2)r²θ"},{"subject":"Precálculo","q":"Para un ángulo θ en posición normal, ¿qué es el ángulo de referencia θ̄?","a":"Es el ángulo agudo formado por el lado terminal de θ y el eje x."},{"subject":"Precálculo","q":"¿En qué consiste la Ley de Senos para un triángulo?","a":"Establece que (sin A/a) = (sin B/b) = (sin C/c)."},{"subject":"Precálculo","q":"¿Cuándo se produce el 'caso ambiguo' (LLA) al resolver un triángulo, que puede llevar a dos soluciones posibles?","a":"Ocurre cuando se conocen dos lados y un ángulo no incluido entre ellos."},{"subject":"Precálculo","q":"Enuncie una de las formas de la Ley de Cosenos.","a":"a² = b² + c² - 2bc cos A (o formas análogas para b² y c²)."},{"subject":"Precálculo","q":"El área de un triángulo con lados de longitud a y b y con ángulo θ entre ellos está dada por la fórmula _____.","a":"Área = (1/2)ab sin θ"},{"subject":"Precálculo","q":"Complete la identidad Pitagórica fundamental: sin² θ + cos² θ = _____.","a":"1"},{"subject":"Precálculo","q":"La fórmula de suma para el coseno es cos(s+t) = _____.","a":"cos s cos t - sin s sin t"},{"subject":"Precálculo","q":"La fórmula de ángulo doble para el seno es sin(2x) = _____.","a":"2 sin x cos x"},{"subject":"Precálculo","q":"La fórmula para bajar potencias para sin² x es _____.","a":"sin² x = (1 - cos(2x)/2)"},{"subject":"Precálculo","q":"Una ecuación de la forma y(x,t) = A sin(ax) cos(bt) se utiliza para modelar una _____.","a":"onda estacionaria"},{"subject":"Precálculo","q":"¿Cómo se convierten las coordenadas polares (r, θ) a coordenadas rectangulares (x, y)?","a":"Se usan las fórmulas x = r cos θ y y = r sin θ."},{"subject":"Precálculo","q":"La gráfica de una ecuación polar de la forma r = a ± b cos θ o r = a ± b sin θ se denomina _____.","a":"limaçon (caracol)"},{"subject":"Precálculo","q":"Enuncie el Teorema de De Moivre para potencias de números complejos.","a":"Si z = r(cos θ + i sin θ), entonces zⁿ = rⁿ(cos(nθ) + i sin(nθ))."},{"subject":"Precálculo","q":"Para dos vectores u = ⟨ u₁, u₂, u₃ ⟩ y v = ⟨ v₁, v₂, v₃ ⟩, su producto punto es u · v = _____.","a":"u₁v₁ + u₂v₂ + u₃v₃"},{"subject":"Precálculo","q":"El producto cruz a × b es un vector que es _____ tanto a a como a b.","a":"perpendicular (ortogonal)"},{"subject":"Precálculo","q":"La magnitud del producto cruz, |a × b|, representa el área de qué figura geométrica?","a":"El área del paralelogramo determinado por los vectores a y b."},{"subject":"Precálculo","q":"El volumen del paralelepípedo determinado por los vectores a, b y c se calcula mediante el valor absoluto del _____.","a":"producto triple escalar, |a · (b × c)|"},{"subject":"Precálculo","q":"Un sistema de ecuaciones lineales de la forma AX = B se puede resolver para X usando la inversa de la matriz de coeficientes A con la ecuación _____.","a":"X = A⁻¹B"},{"subject":"Precálculo","q":"El proceso de expresar una fracción racional como una suma de fracciones más simples se llama _____.","a":"descomposición en fracciones parciales"},{"subject":"Precálculo","q":"Una parábola es el conjunto de todos los puntos en un plano que son equidistantes de un punto fijo llamado _____ y una recta fija llamada _____.","a":"foco, directriz"},{"subject":"Precálculo","q":"Una elipse es el conjunto de todos los puntos en un plano, la suma de cuyas distancias a dos puntos fijos (los focos) es _____.","a":"constante"},{"subject":"Precálculo","q":"Una hipérbola es el conjunto de todos los puntos en un plano, la diferencia de cuyas distancias a dos puntos fijos (los focos) es _____.","a":"constante"},{"subject":"Precálculo","q":"La ecuación (x²/a²) - (y²/b²) = 1 representa una hipérbola con un eje transversal _____.","a":"horizontal"},{"subject":"Precálculo","q":"Las rectas a las que se aproxima una hipérbola a medida que se aleja del origen se llaman _____.","a":"asíntotas"},{"subject":"Precálculo","q":"La excentricidad e de una cónica determina su forma. Si e=1, la cónica es una _____.","a":"parábola"},{"subject":"Precálculo","q":"Si la excentricidad e de una cónica satisface 0 ≤ e < 1, la cónica es una _____.","a":"elipse"},{"subject":"Precálculo","q":"Si la excentricidad e de una cónica satisface e > 1, la cónica es una _____.","a":"hipérbola"},{"subject":"Precálculo","q":"Una sucesión definida por una fórmula como aₙ = 3(a_(n-1) + 2), donde cada término depende del anterior, se llama _____.","a":"sucesión definida en forma recursiva"},{"subject":"Precálculo","q":"Una sucesión en la que la diferencia entre términos consecutivos es constante se llama _____.","a":"sucesión aritmética"},{"subject":"Precálculo","q":"¿Cuál es la fórmula para el n-ésimo término aₙ de una sucesión aritmética con primer término a y diferencia común d?","a":"aₙ = a + (n-1)d"},{"subject":"Precálculo","q":"Una sucesión en la que la razón entre términos consecutivos es constante se llama _____.","a":"sucesión geométrica"},{"subject":"Precálculo","q":"¿Cuál es la fórmula para el n-ésimo término aₙ de una sucesión geométrica con primer término a y razón común r?","a":"aₙ = arⁿ⁻¹"},{"subject":"Precálculo","q":"¿Qué teorema proporciona una fórmula para expandir una potencia de un binomio como (x+y)ⁿ?","a":"El Teorema del Binomio."},{"subject":"Precálculo","q":"El coeficiente del término xⁿ⁻ᵏyᵏ en la expansión de (x+y)ⁿ está dado por el coeficiente binomial _____.","a":"nk o C(n,k)"},{"subject":"Precálculo","q":"¿Qué significa la notación lím_(x → a) f(x) = L?","a":"Significa que los valores de f(x) se pueden acercar arbitrariamente a L tomando valores de x suficientemente cercanos a a (pero no iguales a a)."},{"subject":"Precálculo","q":"El matemático George Polya influyó en el enfoque de resolución de problemas del autor a través de su libro _____.","a":"How To Solve It (Cómo resolverlo)"},{"subject":"Precálculo","q":"¿Qué representan las asíntotas en la gráfica de una hipérbola?","a":"Son las rectas a las que se acercan las ramas de la hipérbola a medida que se alejan del centro."},{"subject":"Precálculo","q":"La ecuación P(x) = d(x)q(x) + r(x) representa el algoritmo de la división para polinomios. ¿Qué representa cada término?","a":"P(x) es el dividendo, d(x) el divisor, q(x) el cociente y r(x) el residuo."},{"subject":"Precálculo","q":"En el contexto de modelado de poblaciones, ¿qué tipo de función describe un crecimiento que inicialmente es rápido pero luego se nivela debido a factores limitantes?","a":"Una función de crecimiento logístico."},{"subject":"Precálculo","q":"¿Cuál es la forma de la ecuación de una recta que pasa por el origen y es perpendicular a la recta Ax + By + C = 0?","a":"La pendiente de la recta dada es -A/B, por lo que la pendiente de la perpendicular es B/A. La ecuación es y = (B/A)x."},{"subject":"Precálculo","q":"En una elipse, ¿cómo se llama el eje más largo y el eje más corto?","a":"El eje más largo es el eje mayor y el más corto es el eje menor."},{"subject":"Precálculo","q":"El término P(x) = aₙ xⁿ + a_(n-1)xⁿ⁻¹ + ... + a₁ x + a₀ representa la forma general de una _____.","a":"función polinomial"},{"subject":"Precálculo","q":"En el modelado con ecuaciones, ¿cuál es el primer paso recomendado por George Polya?","a":"Entender el problema, lo que implica leerlo cuidadosamente e identificar la información dada y lo que se pide."},{"subject":"Precálculo","q":"¿Qué representa el 'rendimiento en porcentaje anual' (APY) de una inversión?","a":"Es la tasa de interés simple que rinde la misma cantidad que el interés compuesto al término de un año."},{"subject":"Precálculo","q":"La función f(x) = ln x es la función logarítmica con base _____.","a":"e (logaritmo natural)"},{"subject":"Precálculo","q":"¿Qué es un radián?","a":"Es la medida de un ángulo central de un círculo que subtiende un arco de longitud igual al radio del círculo."},{"subject":"Precálculo","q":"La identidad tan x = (sin x/cos x) es un ejemplo de una identidad de _____.","a":"cociente"},{"subject":"Precálculo","q":"Para resolver gráficamente la ecuación f(x) = g(x), se buscan las coordenadas _____ de los puntos de intersección de las gráficas y = f(x) y y = g(x).","a":"x"},{"subject":"Precálculo","q":"¿Qué es la matriz identidad I?","a":"Es una matriz cuadrada con unos en la diagonal principal y ceros en las demás posiciones, que actúa como el elemento neutro para la multiplicación de matrices."},{"subject":"Precálculo","q":"El valor |det(A)| para una matriz A de 2 × 2 o 3 × 3 tiene una interpretación geométrica. ¿Cuál es en el caso de 2 × 2?","a":"Representa el área del paralelogramo formado por los vectores columna (o fila) de la matriz."},{"subject":"Cálculo Integral","q":"¿Cuál es la condición necesaria para que lím_(n → ínfty) aₙ = L basándose en una función continua f(x)?","a":"Que f(n) = aₙ cuando n es un entero y lím_(x → ínfty) f(x) = L."},{"subject":"Cálculo Integral","q":"Defina el concepto de 'traza' (o sección transversal) de una superficie.","a":"Curva de intersección de la superficie con un plano paralelo a uno de los planos coordenados."},{"subject":"Cálculo Integral","q":"Concepto: Cilindro","a":"Superficie generada por líneas rectas paralelas (generatrices) que intersecan una curva plana dada."},{"subject":"Cálculo Integral","q":"En el contexto de cilindros, ¿qué nombre reciben las líneas rectas paralelas que generan la superficie?","a":"Generatrices"},{"subject":"Cálculo Integral","q":"Definición: Función Vectorial","a":"Regla que asigna a cada número real del dominio un vector único en el rango."},{"subject":"Cálculo Integral","q":"Si r(t) = ⟨ f(t), g(t), h(t) ⟩, ¿cómo se denominan las funciones f, g y h?","a":"Funciones coordenadas (o funciones componentes)."},{"subject":"Cálculo Integral","q":"Establezca la definición del límite de una función vectorial r(t) cuando t → a.","a":"Es el vector cuyos componentes son los límites de las funciones coordenadas de r(t) cuando t → a."},{"subject":"Cálculo Integral","q":"¿Bajo qué condición una función vectorial r es continua en un número a?","a":"Si lím_(t → a) r(t) = r(a)."},{"subject":"Cálculo Integral","q":"Concepto: Curva en el espacio","a":"Conjunto de puntos (x, y, z) tales que x=f(t), y=g(t), z=h(t), donde f, g, h son funciones continuas en un intervalo I."},{"subject":"Cálculo Integral","q":"En las ecuaciones de una curva en el espacio, ¿qué nombre recibe la variable independiente t?","a":"Parámetro"},{"subject":"Cálculo Integral","q":"Defina el 'vector tangente' a una curva definida por r en un punto P.","a":"Es el vector r'(t) = lím_(h → 0) (r(t+h) - r(t)/h), siempre que el límite exista y sea distinto de cero."},{"subject":"Cálculo Integral","q":"¿Cómo se define la 'recta tangente' a una curva C en un punto P?","a":"Es la recta que pasa por P y es paralela al vector tangente r'(t)."},{"subject":"Cálculo Integral","q":"El plano definido por los vectores normal y binormal N y B en un punto P se llama _____.","a":"Plano normal"},{"subject":"Cálculo Integral","q":"¿Qué vectores definen el 'plano osculador' de una curva en un punto P?","a":"El vector tangente T y el vector normal N."},{"subject":"Cálculo Integral","q":"Etimológicamente, ¿qué significa la palabra latina 'osculum' en el contexto del plano osculador?","a":"Beso"},{"subject":"Cálculo Integral","q":"Definición: Función de dos variables","a":"Regla que asigna a cada par ordenado (x, y) de un conjunto D un único número real f(x, y)."},{"subject":"Cálculo Integral","q":"En la expresión z = f(x, y), ¿cómo se clasifican las variables x y y?","a":"Variables independientes"},{"subject":"Cálculo Integral","q":"En la expresión z = f(x, y), ¿qué nombre recibe la variable z?","a":"Variable dependiente"},{"subject":"Cálculo Integral","q":"Defina el 'rango' de una función de dos variables f.","a":"Conjunto de valores que toma f, es decir, f(x, y) (x, y) ∈ D."},{"subject":"Cálculo Integral","q":"Concepto: Gráfica de una función de dos variables f","a":"Conjunto de todos los puntos (x, y, z) en ℝ³ tales que z = f(x, y) para (x, y) en el dominio D."},{"subject":"Cálculo Integral","q":"¿Qué forma geométrica representa la gráfica de una función lineal z = ax + by + c?","a":"Un plano"},{"subject":"Cálculo Integral","q":"Concepto: Curvas de nivel","a":"Curvas en el plano xy con ecuación f(x, y) = k, donde k es una constante en el rango de f."},{"subject":"Cálculo Integral","q":"Un mapa de contorno es un gráfico de _____ para diferentes valores de la constante k.","a":"Curvas de nivel"},{"subject":"Cálculo Integral","q":"Defina una 'función de tres variables'.","a":"Regla que asigna a cada terna ordenada (x, y, z) en un dominio D un único número real f(x, y, z)."},{"subject":"Cálculo Integral","q":"¿Qué representan las 'superficies de nivel' para una función de tres variables?","a":"Superficies con ecuación f(x, y, z) = k, donde k es una constante."},{"subject":"Cálculo Integral","q":"Establezca la definición formal de lím_((x, y) → (a, b)) f(x, y) = L usando ε y δ.","a":"Para todo ε > 0 existe δ > 0 tal que si 0 < √((x-a)² + (y-b)²) < δ, entonces |f(x, y) - L| < ε."},{"subject":"Cálculo Integral","q":"¿Qué ocurre con el límite de f(x, y) si se encuentran dos trayectorias distintas hacia (a, b) con límites diferentes?","a":"El límite lím_((x, y) → (a, b)) f(x, y) no existe."},{"subject":"Cálculo Integral","q":"Defina la 'continuidad' de una función f de dos variables en el punto (a, b).","a":"Si lím_((x, y) → (a, b)) f(x, y) = f(a, b)."},{"subject":"Cálculo Integral","q":"¿Qué es una 'función polinomial' de dos variables?","a":"Suma de términos de la forma c xᵐ yⁿ, donde c es constante y m, n son enteros no negativos."},{"subject":"Cálculo Integral","q":"Concepto: Función racional de dos variables","a":"Razón o cociente de dos funciones polinomiales de dos variables."},{"subject":"Cálculo Integral","q":"La derivada parcial de f respecto a x en (a, b), denotada fₓ(a, b), se define mediante el límite _____.","a":"fₓ(a, b) = lím_(h → 0) (f(a+h, b) - f(a, b)/h)"},{"subject":"Cálculo Integral","q":"La derivada parcial de f respecto a y en (a, b), denotada f_y(a, b), se define mediante el límite _____.","a":"f_y(a, b) = lím_(h → 0) (f(a, b+h) - f(a, b)/h)"},{"subject":"Cálculo Integral","q":"¿Qué variable se mantiene constante al calcular la derivada parcial fₓ?","a":"La variable y."},{"subject":"Cálculo Integral","q":"¿Qué variable se mantiene constante al calcular la derivada parcial f_y?","a":"La variable x."},{"subject":"Cálculo Integral","q":"Geométricamente, fₓ(a, b) representa la _____ de la recta tangente T₁ a la curva C₁ en el punto P.","a":"Pendiente"},{"subject":"Cálculo Integral","q":"¿Qué representa la curva C₁ en la interpretación geométrica de fₓ(a, b)?","a":"La intersección de la superficie z = f(x, y) con el plano vertical y = b."},{"subject":"Cálculo Integral","q":"Notación: ¿Qué significa la expresión f_(xy)?","a":"Derivar primero respecto a x y luego respecto a y: (fₓ)_y."},{"subject":"Cálculo Integral","q":"Establezca el Teorema de Clairaut sobre derivadas parciales mixtas.","a":"Si f_(xy) y f_(yx) son continuas en un disco D, entonces f_(xy)(a, b) = f_(yx)(a, b)."},{"subject":"Cálculo Integral","q":"¿Qué nombre reciben las soluciones de la 'ecuación de Laplace' (∂² u/∂ x²) + (∂² u/∂ y²) = 0?","a":"Funciones armónicas"},{"subject":"Cálculo Integral","q":"Defina el 'plano tangente' a una superficie S en un punto P.","a":"Plano que contiene las rectas tangentes T₁ y T₂ a las curvas de intersección C₁ y C₂."},{"subject":"Cálculo Integral","q":"Si f tiene derivadas parciales continuas, la ecuación del plano tangente a z=f(x, y) en (x₀, y₀, z₀) es _____.","a":"z - z₀ = fₓ(x₀, y₀)(x - x₀) + f_y(x₀, y₀)(y - y₀)"},{"subject":"Cálculo Integral","q":"Concepto: Linealización de f en (a, b)","a":"La función lineal L(x, y) = f(a, b) + fₓ(a, b)(x-a) + f_y(a, b)(y-b)."},{"subject":"Cálculo Integral","q":"¿Cómo se define el incremento Δ z de una función z=f(x, y)?","a":"Δ z = f(a + Δ x, b + Δ y) - f(a, b)"},{"subject":"Cálculo Integral","q":"Defina cuándo una función z=f(x, y) es 'diferenciable' en (a, b).","a":"Si Δ z puede expresarse como fₓ(a, b)Δ x + f_y(a, b)Δ y + ε₁ Δ x + ε₂ Δ y, donde ε₁, ε₂ → 0 cuando (Δ x, Δ y) → (0, 0)."},{"subject":"Cálculo Integral","q":"¿Qué condición suficiente garantiza que f sea diferenciable en (a, b)?","a":"Que las derivadas parciales fₓ y f_y existan cerca de (a, b) y sean continuas en (a, b)."},{"subject":"Cálculo Integral","q":"Concepto: Diferencial total dz","a":"La expresión dz = fₓ(x, y) dx + f_y(x, y) dy, donde dx y dy son variables independientes."},{"subject":"Cálculo Integral","q":"Establezca la Regla de la Cadena (Caso 1) para z=f(x, y) con x=g(t) y y=h(t).","a":"(dz/dt) = (∂ f/∂ x) (dx/dt) + (∂ f/∂ y) (dy/dt)"},{"subject":"Cálculo Integral","q":"Si F(x, y, z) = 0 define a z implícitamente, ¿cuál es la fórmula para (∂ z/∂ x)?","a":"(∂ z/∂ x) = -(Fₓ/F_z)"},{"subject":"Cálculo Integral","q":"Defina la 'derivada direccional' de f en (x₀, y₀) en la dirección de un vector unitario u = ⟨ a, b ⟩.","a":"Dᵤ f(x₀, y₀) = lím_(h → 0) (f(x₀ + ha, y₀ + hb) - f(x₀, y₀)/h)"},{"subject":"Cálculo Integral","q":"Definición: Vector Gradiente de f(x, y)","a":"∇ f(x, y) = ⟨ fₓ(x, y), f_y(x, y) ⟩ = (∂ f/∂ x) i + (∂ f/∂ y) j"},{"subject":"Cálculo Integral","q":"¿Cuál es la relación entre la derivada direccional Dᵤ f y el vector gradiente ∇ f?","a":"Dᵤ f(x, y) = ∇ f(x, y) · u"},{"subject":"Cálculo Integral","q":"El valor máximo de la derivada direccional Dᵤ f(x) es _____ y ocurre cuando u tiene la misma dirección que ∇ f(x).","a":"|∇ f(x)|"},{"subject":"Cálculo Integral","q":"¿Cómo se define el 'plano tangente' a la superficie de nivel F(x, y, z) = k en P(x₀, y₀, z₀)?","a":"Es el plano que pasa por P con vector normal ∇ F(x₀, y₀, z₀)."},{"subject":"Cálculo Integral","q":"Defina una 'recta normal' a una superficie S en un punto P.","a":"Recta que pasa por P y es perpendicular al plano tangente en P (paralela al vector gradiente)."},{"subject":"Cálculo Integral","q":"Definición: Punto crítico","a":"Punto (a, b) donde fₓ(a, b) = 0 y f_y(a, b) = 0, o donde una de estas derivadas parciales no existe."},{"subject":"Cálculo Integral","q":"Un conjunto en ℝ² es 'cerrado' si _____.","a":"Contiene todos sus puntos frontera."},{"subject":"Cálculo Integral","q":"¿Qué es un 'punto frontera' de un conjunto D?","a":"Punto (a, b) tal que todo disco con centro en él contiene puntos en D y puntos fuera de D."},{"subject":"Cálculo Integral","q":"Un conjunto en ℝ² se denomina _____ si está contenido dentro de algún disco (su extensión es finita).","a":"Acotado"},{"subject":"Cálculo Integral","q":"Establezca el Teorema del Valor Extremo para funciones de dos variables.","a":"Si f es continua en un conjunto cerrado y acotado D, entonces f alcanza un máximo y un mínimo absoluto en D."},{"subject":"Cálculo Integral","q":"¿En qué consiste el método de los 'Multiplicadores de Lagrange'?","a":"En buscar valores de x, y, z y λ tales que ∇ f(x, y, z) = λ ∇ g(x, y, z) y g(x, y, z) = k."},{"subject":"Cálculo Integral","q":"Definición: Integral doble de f sobre un rectángulo R","a":"∬_R f(x, y) dA = lím_(m, n → ínfty) Σ_(i=1)ᵐ Σ_(j=1)ⁿ f(xᵢⱼ^*, yᵢⱼ^*) Δ A"},{"subject":"Cálculo Integral","q":"¿Cuándo se dice que una función f es 'integrable' en un rectángulo R?","a":"Cuando existe el límite de su suma de Riemann doble."},{"subject":"Cálculo Integral","q":"Definición: Campo vectorial sobre ℝ²","a":"Función F que asigna a cada punto (x, y) en un dominio D un vector bidimensional F(x, y)."},{"subject":"Cálculo Integral","q":"¿Cómo se llaman las funciones P y Q en la expresión F(x, y) = P(x, y) i + Q(x, y) j?","a":"Funciones componentes o campos escalares."},{"subject":"Cálculo Integral","q":"Concepto: Campo vectorial conservativo","a":"Campo F para el cual existe una función escalar f tal que F = ∇ f."},{"subject":"Cálculo Integral","q":"En un campo conservativo F = ∇ f, ¿qué nombre recibe la función f?","a":"Función de potencial"},{"subject":"Cálculo Integral","q":"Defina la 'integral de línea' de f a lo largo de C respecto a la longitud de arco.","a":"∫_C f(x, y) ds = lím_(n → ínfty) Σ_(i=1)ⁿ f(xᵢ^*, yᵢ^*) Δ sᵢ"},{"subject":"Cálculo Integral","q":"Una curva C es 'uniforme' si su representación vectorial r(t) cumple que _____.","a":"r'(t) es continua y r'(t) ≠ 0."},{"subject":"Cálculo Integral","q":"Establezca el Teorema de Green para una región D con frontera C.","a":"∮_C P dx + Q dy = ∬_D ((∂ Q/∂ x) - (∂ P/∂ y)) dA"},{"subject":"Cálculo Integral","q":"Definición: Superficie paramétrica","a":"Superficie S definida por una función vectorial r(u, v) = x(u, v) i + y(u, v) j + z(u, v) k."},{"subject":"Cálculo Integral","q":"¿Qué son las 'curvas reticulares' de una superficie paramétrica?","a":"Curvas que se obtienen manteniendo constante uno de los parámetros (u o v)."},{"subject":"Cálculo Integral","q":"El vector normal a una superficie paramétrica en un punto es el producto cruz _____.","a":"rᵤ × rᵥ"},{"subject":"Cálculo Integral","q":"Defina una 'superficie uniforme'.","a":"Aquella donde el vector normal rᵤ × rᵥ no es nulo (no tiene esquinas)."},{"subject":"Cálculo Integral","q":"Fórmula: Área de una superficie paramétrica r(u, v) sobre un dominio D","a":"A(S) = ∬_D |rᵤ × rᵥ| dA"},{"subject":"Cálculo Integral","q":"¿Cuándo se dice que una superficie S es 'orientada'?","a":"Cuando es posible elegir un vector unitario normal n que varíe continuamente sobre toda la superficie."},{"subject":"Cálculo Integral","q":"¿Qué establece el Teorema de la Divergencia (o Teorema de Gauss)?","a":"El flujo de un campo vectorial a través de una superficie cerrada es igual a la integral de la divergencia del campo sobre el sólido encerrado."},{"subject":"Cálculo Integral","q":"Establezca la forma de Lagrange del residuo en la serie de Taylor.","a":"Rₙ(x) = f^((n+1))(c)(n+1)!(x-a)ⁿ⁺¹ para algún c entre a y x."},{"subject":"Cálculo Integral","q":"Defina el 'rotacional' de un campo vectorial F = ⟨ P, Q, R ⟩.","a":"rot F = ∇ × F = ⟨ R_y - Q_z, P_z - Rₓ, Qₓ - P_y ⟩"},{"subject":"Cálculo Integral","q":"Defina la 'divergencia' de un campo vectorial F = ⟨ P, Q, R ⟩.","a":"div F = ∇ · F = (∂ P/∂ x) + (∂ Q/∂ y) + (∂ R/∂ z)"},{"subject":"Cálculo Integral","q":"¿Qué es un 'punto silla'?","a":"Punto crítico (a, b) donde la función no tiene un máximo ni un mínimo local."},{"subject":"Cálculo Integral","q":"Concepto: Regla de Tres en el cálculo","a":"Presentar temas de manera geométrica, numérica y algebraica."},{"subject":"Cálculo Integral","q":"¿Cuál es la cuarta perspectiva añadida a la 'Regla de Tres' para convertirla en la 'Regla de Cuatro'?","a":"Perspectiva verbal o descriptiva."},{"subject":"Cálculo Integral","q":"Definición: Jacobiano de una transformación T(u, v) = (x, y)","a":"(∂(x, y)/∂(u, v)) = [ (∂ x/∂ u) (∂ x/∂ v) (∂ y/∂ u) (∂ y/∂ v) ] = (∂ x/∂ u)(∂ y/∂ v) - (∂ x/∂ v)(∂ y/∂ u)"},{"subject":"Cálculo Integral","q":"En una integral doble, ¿cómo cambia el elemento de área dA bajo una transformación x=g(u,v), y=h(u,v)?","a":"dA = ≤ft| (∂(x, y)/∂(u, v)) | du dv"},{"subject":"Cálculo Integral","q":"Defina 'independencia de la trayectoria' para una integral de línea ∫_C F · dr.","a":"Ocurre cuando la integral tiene el mismo valor para cualesquiera dos trayectorias con los mismos puntos inicial y final."},{"subject":"Cálculo Integral","q":"¿Bajo qué condición un campo vectorial F en una región simplemente conexa es conservativo?","a":"Si su rotacional es el vector cero (∇ × F = 0)."},{"subject":"Cálculo Integral","q":"Concepto: Integral de superficie de F (Flujo)","a":"∬_S F · dS = ∬_S F · n dS"},{"subject":"Cálculo Integral","q":"Establezca el Teorema de Stokes.","a":"∮_C F · dr = ∬_S (∇ × F) · dS"},{"subject":"Cálculo Integral","q":"¿Qué es el 'polinomio de Taylor de primer grado' de una función de dos variables?","a":"Es idéntico a la linealización L(x, y) de la función en ese punto."},{"subject":"Cálculo Integral","q":"Para una función de dos variables, ¿qué representa el término f_(xy) en el polinomio de Taylor de segundo grado?","a":"La contribución de la segunda derivada parcial mixta al ajuste cuadrático de la superficie."},{"subject":"Cálculo Integral","q":"Defina una 'ecuación diferencial de segundo orden'.","a":"Ecuación que relaciona una función desconocida, su primera derivada y su segunda derivada."},{"subject":"Cálculo Integral","q":"¿Qué caracteriza a una ecuación diferencial 'homogénea' de segundo orden?","a":"Es de la forma ay'' + by' + cy = 0 (el lado derecho es cero)."},{"subject":"Cálculo Integral","q":"Concepto: Curvatura κ de una curva plana","a":"κ = |dφ / ds|, donde φ es el ángulo de inclinación de la recta tangente."},{"subject":"Cálculo Integral","q":"¿Qué establece el Teorema Fundamental de las Integrales de Línea?","a":"∫_C ∇ f · dr = f(r(b)) - f(r(a)) para una curva C de a a b."},{"subject":"Cálculo Integral","q":"Definición: Límite de una función de tres variables lím_(x → a) f(x) = L","a":"Para todo ε > 0 existe δ > 0 tal que si 0 < |x - a| < δ, entonces |f(x) - L| < ε."},{"subject":"Cálculo Integral","q":"Un conjunto es 'conexo' si _____.","a":"Cualquier par de puntos en él se pueden unir mediante una trayectoria que queda dentro del conjunto."},{"subject":"Cálculo Integral","q":"Defina 'región abierta' en ℝ².","a":"Región que no contiene ninguno de sus puntos frontera."},{"subject":"Cálculo Integral","q":"¿Cuál es la interpretación física del rotacional en mecánica de fluidos?","a":"Representa la tendencia de las partículas del fluido a girar alrededor de un eje."},{"subject":"Cálculo Integral","q":"¿Cuál es la interpretación física de la divergencia?","a":"Representa la tasa neta de salida de flujo por unidad de volumen en un punto dado."},{"subject":"Cálculo Integral","q":"Concepto: Serie de Taylor","a":"Representación de una función como una suma infinita de términos calculados a partir de los valores de sus derivadas en un punto único."},{"subject":"Cálculo Integral","q":"Defina 'serie de potencias' centrada en a.","a":"Serie de la forma Σ_(n=0)^(ínfty) cₙ (x - a)ⁿ."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define formalmente una función f?","a":"Es una regla que asigna a cada elemento x de un conjunto D exactamente un elemento f(x) de un conjunto E."},{"subject":"Cálculo Diferencial","q":"En el contexto de una función, ¿qué es el 'dominio'?","a":"Es el conjunto de todos los valores posibles de entrada de la función."},{"subject":"Cálculo Diferencial","q":"En una función y = f(x), ¿cuál es la 'variable independiente'?","a":"Es el símbolo que representa un número arbitrario en el dominio."},{"subject":"Cálculo Diferencial","q":"¿Qué prueba geométrica determina si una curva en el plano es la gráfica de una función?","a":"La prueba de la recta vertical."},{"subject":"Cálculo Diferencial","q":"¿Qué representa el 'cociente de diferencia' (f(a+h) - f(a)/h) en términos de cambio?","a":"Representa la razón promedio de cambio de f(x) entre x = a y x = a + h."},{"subject":"Cálculo Diferencial","q":"Defina una 'función tabular'.","a":"Es una función que se define mediante una tabla de valores."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la convención estándar de medida angular en el cálculo?","a":"Se utiliza siempre la medida en radianes."},{"subject":"Cálculo Diferencial","q":"¿Qué es un 'modelo matemático'?","a":"Es una descripción matemática, frecuentemente mediante una función, de un fenómeno del mundo real."},{"subject":"Cálculo Diferencial","q":"La función exponencial tiene la forma f(x) = aˣ. ¿Qué restricción debe cumplir la base a?","a":"Debe ser una constante positiva (a > 0)."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define el número e geométricamente en relación con la función f(x) = eˣ?","a":"Es el número tal que la recta tangente a la curva y = eˣ en (0, 1) tiene pendiente exactamente igual a 1."},{"subject":"Cálculo Diferencial","q":"¿Qué condición debe cumplir una función para tener una inversa?","a":"Debe ser una función uno a uno (inyectiva)."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la relación lógica entre logₐ x = y y la función exponencial?","a":"logₐ x = y es equivalente a a^y = x."},{"subject":"Cálculo Diferencial","q":"En el problema de la tangente, ¿a qué se aproxima la pendiente de la recta secante cuando los puntos se acercan?","a":"Se aproxima a la pendiente de la recta tangente."},{"subject":"Cálculo Diferencial","q":"Defina intuitivamente lím_(x → a) f(x) = L.","a":"Los valores de f(x) se acercan arbitrariamente a L a medida que x se acerca a a, sin llegar a ser a."},{"subject":"Cálculo Diferencial","q":"¿Qué indica el símbolo lím_(x → a⁻) f(x) = L?","a":"Indica el límite lateral izquierdo de la función cuando x tiende a a."},{"subject":"Cálculo Diferencial","q":"¿Cuándo se dice que una recta x = a es una 'asíntota vertical'?","a":"Cuando al menos uno de los límites laterales de la función en a es ínfty o -ínfty."},{"subject":"Cálculo Diferencial","q":"Según las leyes de los límites, ¿a qué es igual el límite de una suma?","a":"A la suma de los límites de las funciones individuales."},{"subject":"Cálculo Diferencial","q":"¿Cuál es el requisito para aplicar la ley del límite de un cociente?","a":"Que el límite del denominador no sea igual a cero."},{"subject":"Cálculo Diferencial","q":"En la definición exacta de límite, ¿qué representa δ?","a":"Representa la distancia máxima permitida entre x y a."},{"subject":"Cálculo Diferencial","q":"En la definición exacta de límite, ¿qué representa ε?","a":"Representa el margen de error o cercanía permitido entre f(x) y L."},{"subject":"Cálculo Diferencial","q":"Escriba la definición precisa de lím_(x → a) f(x) = L.","a":"Para todo ε > 0 existe δ > 0 tal que si 0 < |x - a| < δ entonces |f(x) - L| < ε."},{"subject":"Cálculo Diferencial","q":"¿Qué tres condiciones debe cumplir f para ser 'continua en a'?","a":"f(a) existe, lím_(x → a) f(x) existe y lím_(x → a) f(x) = f(a)."},{"subject":"Cálculo Diferencial","q":"¿Qué afirma el Teorema del Valor Intermedio?","a":"Si f es continua en [a, b], entonces toma todos los valores entre f(a) y f(b)."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define una 'asíntota horizontal'?","a":"Es la recta y = L si lím_(x → ínfty) f(x) = L o lím_(x → -ínfty) f(x) = L."},{"subject":"Cálculo Diferencial","q":"¿Cuál es el valor de lím_(x → ínfty) (1/xⁿ) para n > 0?","a":"Es igual a 0."},{"subject":"Cálculo Diferencial","q":"Defina la 'derivada de una función f en el número a'.","a":"f'(a) = lím_(h → 0) (f(a+h) - f(a)/h), si el límite existe."},{"subject":"Cálculo Diferencial","q":"¿Qué representa geométricamente la derivada f'(a)?","a":"Representa la pendiente de la recta tangente a la curva y = f(x) en el punto (a, f(a))."},{"subject":"Cálculo Diferencial","q":"En física, si s = f(t) es la posición, ¿qué representa f'(t)?","a":"Representa la velocidad instantánea en el tiempo t."},{"subject":"Cálculo Diferencial","q":"Si una función f es derivable en a, ¿qué se puede afirmar sobre su continuidad?","a":"Se afirma que la función f es necesariamente continua en a."},{"subject":"Cálculo Diferencial","q":"¿Cuáles son las tres formas principales en que una función puede no ser derivable en un punto?","a":"Si hay una esquina (pico), una discontinuidad o una tangente vertical."},{"subject":"Cálculo Diferencial","q":"¿Qué es la 'segunda derivada' de una función?","a":"Es la derivada de la función derivada, denotada como f''(x)."},{"subject":"Cálculo Diferencial","q":"Si s(t) es la posición, ¿cuál es la interpretación física de s''(t)?","a":"Representa la aceleración del objeto."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la 'Regla de la Potencia' para la derivación?","a":"(d/dx)(xⁿ) = nxⁿ⁻¹."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de la función constante f(x) = c?","a":"f'(x) = 0."},{"subject":"Cálculo Diferencial","q":"Escriba la 'Regla del Producto' para derivar f(x) = u(x)v(x).","a":"(d/dx)[u(x)v(x)] = u(x)v'(x) + v(x)u'(x)."},{"subject":"Cálculo Diferencial","q":"Escriba la 'Regla del Cociente' para derivar f(x) = (u(x)/v(x)).","a":"(d/dx)≤ft[(u(x)/v(x))] = (v(x)u'(x) - u(x)v'(x)/[v(x)]²)."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = sin x?","a":"f'(x) = cos x."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = cos x?","a":"f'(x) = -sin x."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = tan x?","a":"f'(x) = sec² x."},{"subject":"Cálculo Diferencial","q":"Establezca la 'Regla de la Cadena' para una función compuesta y = f(g(x)).","a":"(dy/dx) = f'(g(x)) · g'(x)."},{"subject":"Cálculo Diferencial","q":"¿Cuándo es necesario utilizar la 'derivación implícita'?","a":"Cuando no es posible o conveniente despejar y explícitamente en términos de x en una ecuación."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de la función logaritmo natural y = ln x?","a":"(dy/dx) = (1/x)."},{"subject":"Cálculo Diferencial","q":"¿En qué consiste la 'derivación logarítmica'?","a":"Consiste en tomar logaritmos en ambos lados de una ecuación antes de derivar para simplificar productos o potencias complejas."},{"subject":"Cálculo Diferencial","q":"¿Qué es la 'linealización' de una función f en a?","a":"Es la aproximación de la función mediante su recta tangente: L(x) = f(a) + f'(a)(x - a)."},{"subject":"Cálculo Diferencial","q":"Defina la 'diferencial dy' para una función derivable y = f(x).","a":"dy = f'(x)dx, donde dx es una variable independiente."},{"subject":"Cálculo Diferencial","q":"¿Qué es un 'máximo absoluto' de una función f en un dominio D?","a":"Es un valor f(c) tal que f(c) ≥ f(x) para todo x en D."},{"subject":"Cálculo Diferencial","q":"¿Qué afirma el Teorema de Fermat sobre los extremos locales?","a":"Si f tiene un máximo o mínimo local en c, y f'(c) existe, entonces f'(c) = 0."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define un 'número crítico' de una función f?","a":"Es un número c en el dominio tal que f'(c) = 0 o f'(c) no existe."},{"subject":"Cálculo Diferencial","q":"¿Qué afirma el Teorema de Rolle?","a":"Si f es continua en [a,b], derivable en (a,b) y f(a)=f(b), existe c ∈ (a,b) tal que f'(c)=0."},{"subject":"Cálculo Diferencial","q":"Escriba la fórmula del Teorema del Valor Medio.","a":"f'(c) = (f(b) - f(a)/b - a)."},{"subject":"Cálculo Diferencial","q":"Si f'(x) > 0 en un intervalo, ¿qué se puede decir sobre la función?","a":"La función es creciente en ese intervalo."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la 'Prueba de la Segunda Derivada' para determinar la concavidad?","a":"Si f''(x) > 0, la gráfica es cóncava hacia arriba; si f''(x) < 0, es cóncava hacia abajo."},{"subject":"Cálculo Diferencial","q":"¿Qué es un 'punto de inflexión'?","a":"Es un punto donde la curva cambia su concavidad."},{"subject":"Cálculo Diferencial","q":"¿Bajo qué condiciones se aplica la Regla de l'Hospital?","a":"Para límites que resultan en formas indeterminadas del tipo (0/0) o (ínfty/ínfty)."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define una 'antiderivada' de f en un intervalo I?","a":"Es una función F tal que F'(x) = f(x) para todo x en I."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la interpretación geométrica de la integral definida ∫ₐᵇ f(x) dx si f(x) ≥ 0?","a":"Representa el área de la región bajo la curva y = f(x) desde a hasta b."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'suma de Riemann'?","a":"Es una suma de la forma Σ_(i=1)ⁿ f(xᵢ^*) Δ x utilizada para aproximar el área bajo una curva."},{"subject":"Cálculo Diferencial","q":"Escriba el Teorema Fundamental del Cálculo, Parte 1.","a":"Si g(x) = ∫ₐˣ f(t) dt, entonces g'(x) = f(x)."},{"subject":"Cálculo Diferencial","q":"Escriba el Teorema Fundamental del Cálculo, Parte 2.","a":"∫ₐᵇ f(x) dx = F(b) - F(a), donde F es cualquier antiderivada de f."},{"subject":"Cálculo Diferencial","q":"¿Qué representa una 'integral indefinida' ∫ f(x) dx?","a":"Representa la familia de todas las antiderivadas de la función f."},{"subject":"Cálculo Diferencial","q":"¿Qué establece el Teorema del Cambio Total?","a":"La integral de una razón de cambio es el cambio total de la cantidad."},{"subject":"Cálculo Diferencial","q":"¿En qué consiste la 'Regla de la Sustitución' para la integración?","a":"Es el proceso inverso de la regla de la cadena, utilizado para simplificar integrales mediante un cambio de variable u = g(x)."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la fórmula para calcular el área entre dos curvas y = f(x) y y = g(x)?","a":"A = ∫ₐᵇ [f(x) - g(x)] dx, asumiendo f(x) ≥ g(x)."},{"subject":"Cálculo Diferencial","q":"¿Qué método se utiliza para hallar el volumen de un sólido de revolución rebanándolo perpendicularmente al eje?","a":"El método de los discos (o arandelas)."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la fórmula del volumen por 'cascarones cilíndricos' al girar alrededor del eje y?","a":"V = ∫ₐᵇ 2π x f(x) dx."},{"subject":"Cálculo Diferencial","q":"¿Cómo se calcula el 'valor promedio' de una función f en [a, b]?","a":"fₐᵥₑ = (1/b - a) ∫ₐᵇ f(x) dx."},{"subject":"Cálculo Diferencial","q":"Escriba la fórmula de 'Integración por Partes'.","a":"∫ u dv = uv - ∫ v du."},{"subject":"Cálculo Diferencial","q":"¿Cuál es el objetivo principal de la técnica de 'Fracciones Parciales'?","a":"Descomponer una función racional compleja en una suma de funciones racionales más simples que sean fáciles de integrar."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'integral impropia' de Tipo 1?","a":"Es una integral definida sobre un intervalo infinito."},{"subject":"Cálculo Diferencial","q":"¿Cuándo se dice que una integral impropia es 'convergente'?","a":"Cuando el límite que la define existe y es un número finito."},{"subject":"Cálculo Diferencial","q":"Escriba la fórmula para la 'longitud de arco' de una curva suave y = f(x).","a":"L = ∫ₐᵇ √(1 + [f'(x)]²) dx."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'ecuación diferencial separable'?","a":"Es una ecuación de primer orden en la que la expresión para (dy/dx) puede factorizarse como el producto de una función de x y una de y."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define una 'sucesión' matemática?","a":"Es una lista de números escritos en un orden definido."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'serie infinita'?","a":"Es la suma de los términos de una sucesión infinita."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la condición de convergencia para una 'serie geométrica' Σ arⁿ⁻¹?","a":"La serie converge si |r| < 1."},{"subject":"Cálculo Diferencial","q":"¿Qué afirma la 'Prueba de la Razón' para la convergencia de series?","a":"Si lím_(n → ínfty) |a_(n+1)aₙ| = L < 1, la serie es absolutamente convergente."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'serie de potencias' centrada en a?","a":"Es una serie de la forma Σ_(n=0)^(ínfty) cₙ(x - a)ⁿ."},{"subject":"Cálculo Diferencial","q":"Escriba la fórmula general para la 'Serie de Taylor' de una función f en a.","a":"f(x) = Σ_(n=0)^(ínfty) f^((n))(a)n!(x - a)ⁿ."},{"subject":"Cálculo Diferencial","q":"¿Qué nombre recibe la Serie de Taylor cuando a = 0?","a":"Serie de Maclaurin."},{"subject":"Cálculo Diferencial","q":"Según la 'Regla de Tres', ¿en qué tres formas deben presentarse los temas de cálculo?","a":"De manera geométrica, numérica y algebraica."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la 'Regla de Cuatro' que expande la Regla de Tres?","a":"Añade el punto de vista verbal o descriptivo a los otros tres."},{"subject":"Cálculo Diferencial","q":"¿Qué representa el área bajo la curva de una función de velocidad?","a":"Representa la distancia total recorrida por el objeto."},{"subject":"Cálculo Diferencial","q":"¿Cómo se define el 'rango' de una función?","a":"Es el conjunto de todos los valores posibles de f(x) conforme x varía en todo el dominio."},{"subject":"Cálculo Diferencial","q":"Escriba la derivada de la función exponencial natural f(x) = eˣ.","a":"f'(x) = eˣ."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'función par' en términos de simetría?","a":"Es una función tal que f(-x) = f(x), siendo su gráfica simétrica respecto al eje y."},{"subject":"Cálculo Diferencial","q":"¿Qué es una 'función impar' en términos de simetría?","a":"Es una función tal que f(-x) = -f(x), siendo su gráfica simétrica respecto al origen."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = aˣ?","a":"f'(x) = aˣ ln a."},{"subject":"Cálculo Diferencial","q":"Defina la 'derivada de orden n'.","a":"Es el resultado de derivar una función sucesivamente n veces."},{"subject":"Cálculo Diferencial","q":"¿Qué relación establece la 'Identidad de Pitágoras' en funciones trigonométricas?","a":"sin² x + cos² x = 1."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = csc x?","a":"f'(x) = -csc x cot x."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = sec x?","a":"f'(x) = sec x tan x."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la derivada de f(x) = cot x?","a":"f'(x) = -csc² x."},{"subject":"Cálculo Diferencial","q":"¿Qué nombre recibe el límite lím_(h → 0) (f(a+h) - f(a)/h) cuando existe?","a":"La derivada de f en a."},{"subject":"Cálculo Diferencial","q":"¿Cómo se halla la 'linealización' de una función?","a":"Encontrando la ecuación de la recta tangente en un punto específico."},{"subject":"Cálculo Diferencial","q":"¿Qué establece la 'Prueba de la Primera Derivada' para extremos locales?","a":"Si f' cambia de positiva a negativa en c, f(c) es un máximo local."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la integral de la función potencia ∫ xⁿ dx para n ≠ -1?","a":"xⁿ⁺¹n+1 + C."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la integral de ∫ (1/x) dx?","a":"ln |x| + C."},{"subject":"Cálculo Diferencial","q":"¿Cuál es la integral de ∫ eˣ dx?","a":"eˣ + C."},{"subject":"Cálculo Diferencial","q":"¿Qué técnica de integración se asocia comúnmente con la 'sustitución trigonométrica'?","a":"El uso de identidades trigonométricas para simplificar raíces cuadradas de formas cuadráticas."},{"subject":"Cálculo Diferencial","q":"En el cálculo de volúmenes, ¿cuándo se usa la fórmula V = ∫ A(x) dx?","a":"Cuando conocemos el área A(x) de las secciones transversales del sólido."},{"subject":"Cálculo Diferencial","q":"¿Cuál es el trabajo realizado por una fuerza variable F(x) desde a hasta b?","a":"W = ∫ₐᵇ F(x) dx."},{"subject":"Cálculo Diferencial","q":"¿Qué establece la 'Prueba de la Integral' para series?","a":"Una serie Σ aₙ converge si y solo si la integral impropia correspondiente ∫₁^ínfty f(x) dx converge."},{"subject":"Álgebra Lineal","q":"¿Cuál es la forma general de una ecuación lineal con n incógnitas?","a":"a₁x₁ + a₂x₂ + … + aₙxₙ = b, donde las aᵢ y b son constantes reales."},{"subject":"Álgebra Lineal","q":"Una _____ de una ecuación lineal es una sucesión de n números s₁, s₂, …, sₙ que satisfacen la ecuación al sustituirlos.","a":"Solución"},{"subject":"Álgebra Lineal","q":"¿Cuáles son las tres posibilidades para el número de soluciones de un sistema lineal?","a":"Una solución única, ninguna solución o un número infinito de soluciones."},{"subject":"Álgebra Lineal","q":"¿Qué técnica se utiliza para encontrar soluciones de un sistema lineal eliminando incógnitas?","a":"El método de eliminación."},{"subject":"Álgebra Lineal","q":"En el método de eliminación, ¿cuáles son las tres operaciones permitidas sobre las ecuaciones?","a":"Intercambiar dos ecuaciones, multiplicar una por una constante no nula y sumar un múltiplo de una a otra."},{"subject":"Álgebra Lineal","q":"Geométricamente, ¿qué representa una ecuación lineal con dos incógnitas en el plano?","a":"Una línea recta."},{"subject":"Álgebra Lineal","q":"Geométricamente, ¿qué representa una ecuación lineal con tres incógnitas en el espacio?","a":"Un plano."},{"subject":"Álgebra Lineal","q":"Si un sistema de dos ecuaciones con dos incógnitas no tiene solución, ¿cómo son sus gráficas?","a":"Son dos rectas paralelas que no se intersecan."},{"subject":"Álgebra Lineal","q":"Concepto: Matriz m × n","a":"Definition: Un arreglo rectangular de mn números reales ordenados en m filas y n columnas."},{"subject":"Álgebra Lineal","q":"Si una matriz tiene el mismo número de filas y columnas (m = n), se denomina matriz _____.","a":"Cuadrada"},{"subject":"Álgebra Lineal","q":"¿Qué elementos forman la diagonal principal de una matriz cuadrada A?","a":"Los números a₁₁, a₂₂, …, aₙₙ."},{"subject":"Álgebra Lineal","q":"¿Cómo se denomina al elemento de una matriz que se encuentra en la fila i y la columna j?","a":"El i,j-ésimo elemento o la entrada (i, j)."},{"subject":"Álgebra Lineal","q":"Term: n-vector","a":"Definition: Una matriz de 1 × n (vector fila) o de n × 1 (vector columna)."},{"subject":"Álgebra Lineal","q":"¿Qué condición deben cumplir dos matrices A y B para ser consideradas iguales?","a":"Deben tener el mismo tamaño (m × n) y sus entradas correspondientes deben ser idénticas (aᵢⱼ = bᵢⱼ)."},{"subject":"Álgebra Lineal","q":"¿Cuál es el requisito para que la suma de dos matrices A + B esté definida?","a":"Ambas matrices deben ser del mismo tamaño."},{"subject":"Álgebra Lineal","q":"La matriz obtenida al multiplicar cada elemento de A por un número real r se denomina _____.","a":"Múltiplo escalar de A"},{"subject":"Álgebra Lineal","q":"Concepto: Combinación lineal de matrices","a":"Definition: Una expresión de la forma c₁A₁ + c₂A₂ + … + cₖAₖ, donde las cᵢ son escalares."},{"subject":"Álgebra Lineal","q":"Si A es una matriz de m × n, su _____ Aᵀ es una matriz de n × m donde las filas de Aᵀ son las columnas de A.","a":"Traspuesta"},{"subject":"Álgebra Lineal","q":"¿Qué propiedad define a una matriz diagonal?","a":"Es una matriz cuadrada donde todas las entradas fuera de la diagonal principal son cero (aᵢⱼ = 0 para i ≠ j)."},{"subject":"Álgebra Lineal","q":"¿En qué se diferencia una matriz escalar de una matriz diagonal?","a":"En la matriz escalar, todos los elementos de la diagonal principal son iguales entre sí."},{"subject":"Álgebra Lineal","q":"Term: Matriz Identidad (Iₙ)","a":"Definition: Una matriz escalar de n × n donde todas las entradas de la diagonal principal son iguales a 1."},{"subject":"Álgebra Lineal","q":"¿Qué es un 'bit' en el contexto de matrices binarias?","a":"Un dígito binario que puede tomar el valor de 0 o 1."},{"subject":"Álgebra Lineal","q":"¿Cómo se define la suma de los bits 1 + 1 en aritmética binaria?","a":"1 + 1 = 0."},{"subject":"Álgebra Lineal","q":"En el sistema binario, ¿cuál es el inverso aditivo del escalar 1?","a":"El mismo 1, ya que 1 + 1 = 0."},{"subject":"Álgebra Lineal","q":"Term: Matriz Triangular Superior","a":"Definition: Una matriz cuadrada donde todos los elementos por debajo de la diagonal principal son cero (aᵢⱼ = 0 para i > j)."},{"subject":"Álgebra Lineal","q":"Term: Matriz Triangular Inferior","a":"Definition: Una matriz cuadrada donde todos los elementos por encima de la diagonal principal son cero (aᵢⱼ = 0 para i < j)."},{"subject":"Álgebra Lineal","q":"¿Qué resulta de sumar o restar dos matrices diagonales?","a":"Otra matriz diagonal."},{"subject":"Álgebra Lineal","q":"¿Cuál es la fórmula para el producto punto (o interior) de dos n-vectores a y b?","a":"a · b = a₁b₁ + a₂b₂ + … + aₙbₙ = Σ_(i=1)ⁿ aᵢbᵢ."},{"subject":"Álgebra Lineal","q":"Para que el producto de matrices AB esté definido, ¿qué relación debe haber entre sus dimensiones?","a":"El número de columnas de A debe ser igual al número de filas de B."},{"subject":"Álgebra Lineal","q":"Si A es de m × p y B es de p × n, ¿cuál es el tamaño de la matriz resultante AB?","a":"m × n."},{"subject":"Álgebra Lineal","q":"¿Cómo se calcula la entrada cᵢⱼ del producto matricial C = AB?","a":"Como el producto punto de la fila i de A y la columna j de B."},{"subject":"Álgebra Lineal","q":"¿Es la multiplicación de matrices generalmente conmutativa (AB = BA)?","a":"No, en general AB ≠ BA, incluso si ambos productos están definidos."},{"subject":"Álgebra Lineal","q":"¿Cómo se expresa un sistema lineal de m ecuaciones con n incógnitas en forma matricial?","a":"Ax = b, donde A es la matriz de coeficientes, x el vector de incógnitas y b el vector de términos constantes."},{"subject":"Álgebra Lineal","q":"Concepto: Matriz aumentada","a":"Definition: La matriz [A | b] obtenida al adjuntar el vector columna b a la matriz de coeficientes A."},{"subject":"Álgebra Lineal","q":"¿Cómo puede interpretarse el producto Ac de una matriz A y un vector columna c?","a":"Como una combinación lineal de las columnas de A, donde los coeficientes son las entradas de c."},{"subject":"Álgebra Lineal","q":"¿Cómo se obtiene la j-ésima columna del producto matricial AB?","a":"Calculando el producto matricial $A \\cdot col_j(B)."},{"subject":"Álgebra Lineal","q":"Term: Submatriz","a":"Definition: Matriz obtenida al eliminar algunas filas o columnas de una matriz original."},{"subject":"Álgebra Lineal","q":"El método de multiplicar matrices subdividiéndolas en bloques se conoce como _____.","a":"Multiplicación por bloques"},{"subject":"Álgebra Lineal","q":"Propiedad de la suma: A + B = B + A representa la ley _____.","a":"Conmutativa"},{"subject":"Álgebra Lineal","q":"¿Qué es la matriz nula o matriz cero (O)?","a":"Una matriz donde todas sus entradas son iguales a cero, actuando como el neutro aditivo."},{"subject":"Álgebra Lineal","q":"Concepto: Inverso aditivo de A","a":"Definition: La matriz -A tal que A + (-A) = O, obtenida multiplicando A por el escalar -1."},{"subject":"Álgebra Lineal","q":"¿Cuál es la propiedad asociativa de la multiplicación de matrices?","a":"A(BC) = (AB)C."},{"subject":"Álgebra Lineal","q":"¿Qué establecen las leyes distributivas para matrices?","a":"A(B + C) = AB + AC y (A + B)C = AC + BC."},{"subject":"Álgebra Lineal","q":"Para cualquier matriz A de m × n, ¿a qué es igual Iₘ A y AIₙ?","a":"A la matriz A."},{"subject":"Álgebra Lineal","q":"Si A es una matriz cuadrada, ¿cómo se define A⁰?","a":"A⁰ = Iₙ (donde n es el orden de A)."},{"subject":"Álgebra Lineal","q":"¿Bajo qué condición se cumple que (AB)ᵖ = Aᵖ Bᵖ para matrices cuadradas?","a":"Únicamente si las matrices A y B conmutan (AB = BA)."},{"subject":"Álgebra Lineal","q":"¿Es posible que AB = O aunque ni A ni B sean la matriz cero?","a":"Sí, a diferencia de los números reales, el producto de matrices no nulas puede ser cero."},{"subject":"Álgebra Lineal","q":"¿Se cumple la ley de cancelación (AB = AC ⟹ B = C) en matrices si A ≠ O?","a":"No necesariamente; existen casos donde AB = AC pero B ≠ C."},{"subject":"Álgebra Lineal","q":"Concepto: Cadena de Markov","a":"Definition: Un modelo matemático donde la distribución futura depende de la actual mediante una matriz de transición, como en el ejemplo de competencia de mercado."},{"subject":"Álgebra Lineal","q":"En una distribución de mercado estable x₀ con matriz de transición A, se debe cumplir que Ax₀ = ….","a":"x₀"},{"subject":"Álgebra Lineal","q":"¿A qué es igual la traspuesta de la traspuesta de una matriz ((Aᵀ)ᵀ)?","a":"A la matriz original A."},{"subject":"Álgebra Lineal","q":"¿A qué es igual la traspuesta de un producto de matrices (AB)ᵀ?","a":"Al producto de las traspuestas en orden inverso: Bᵀ Aᵀ."},{"subject":"Álgebra Lineal","q":"¿Qué propiedad define a una matriz simétrica?","a":"Una matriz cuadrada que es igual a su traspuesta (Aᵀ = A)."},{"subject":"Álgebra Lineal","q":"En una matriz simétrica, ¿qué relación hay entre sus elementos aᵢⱼ y aⱼᵢ?","a":"Son iguales (aᵢⱼ = aⱼᵢ), lo que implica simetría respecto a la diagonal principal."},{"subject":"Álgebra Lineal","q":"Si A es triangular superior, ¿de qué tipo es su traspuesta Aᵀ?","a":"Triangular inferior."},{"subject":"Álgebra Lineal","q":"¿Cuál es el resultado de la suma de dos matrices triangulares superiores?","a":"Una matriz triangular superior."},{"subject":"Álgebra Lineal","q":"¿Qué tipo de matriz resulta del producto de dos matrices escalares?","a":"Una matriz escalar."},{"subject":"Álgebra Lineal","q":"¿Cuál es la i,j-ésima entrada de la matriz diferencia A - B?","a":"aᵢⱼ - bᵢⱼ."},{"subject":"Álgebra Lineal","q":"Propiedad: (rA)ᵀ = ….","a":"rAᵀ, donde r es un escalar."},{"subject":"Álgebra Lineal","q":"¿Qué sucede con las entradas de la diagonal principal en la matriz A - Aᵀ?","a":"Todas son iguales a cero."},{"subject":"Álgebra Lineal","q":"Si A es una matriz real tal que AAᵀ = O, ¿qué se puede concluir sobre A?","a":"Que A debe ser la matriz nula (A = O)."},{"subject":"Álgebra Lineal","q":"¿Cuántos n-vectores binarios distintos existen?","a":"2ⁿ vectores."},{"subject":"Álgebra Lineal","q":"¿Cuántas matrices binarias de n × n existen?","a":"2^(n²) matrices."},{"subject":"Álgebra Lineal","q":"¿Qué nombre recibe una matriz que tiene la gran mayoría de sus entradas iguales a cero?","a":"Matriz rala, esparcida o poco densa."},{"subject":"Álgebra Lineal","q":"En el algoritmo de Google, ¿qué representa una entrada aᵢⱼ = 1 en la matriz de conectividad?","a":"Que el sitio web j está vinculado (tiene un enlace) con el sitio web i."},{"subject":"Álgebra Lineal","q":"La expresión Σ_(j=1)ᵐ Σ_(i=1)ⁿ aᵢⱼ se denomina _____.","a":"Suma doble"},{"subject":"Álgebra Lineal","q":"¿A qué es igual el producto punto de dos n-vectores si se expresan como matrices de n × 1?","a":"Al producto matricial uᵀ v."},{"subject":"Álgebra Lineal","q":"¿Cómo se define la i-ésima fila del producto AB en términos de las filas de A?","a":"Como el producto filᵢ(A) · B."},{"subject":"Álgebra Lineal","q":"¿Cuál es el valor de Σ_(i=1)ⁿ c donde c es una constante?","a":"nc."},{"subject":"Álgebra Lineal","q":"Si una matriz es simultáneamente triangular superior y triangular inferior, ¿qué tipo de matriz es?","a":"Una matriz diagonal."},{"subject":"Álgebra Lineal","q":"Propiedad: A(rB) = ….","a":"r(AB) = (rA)B."},{"subject":"Álgebra Lineal","q":"¿Qué propiedad de la suma de números reales garantiza que A + B = B + A para matrices?","a":"La conmutatividad de la suma de números reales (aᵢⱼ + bᵢⱼ = bᵢⱼ + aᵢⱼ)."},{"subject":"Álgebra Lineal","q":"¿Cuál es el resultado de la operación binaria 0 + 1?","a":"1."},{"subject":"Álgebra Lineal","q":"¿Cómo se representa la palabra 'OFF' y 'ON' en una matriz binaria de interruptores?","a":"OFF como 0 y ON como 1."},{"subject":"Álgebra Lineal","q":"¿Qué ocurre si multiplicas una matriz A por una matriz nula O (de dimensiones compatibles)?","a":"El resultado es una matriz nula (AO = O)."},{"subject":"Álgebra Lineal","q":"La matriz que tiene unos en la diagonal principal y ceros en el resto es la matriz _____.","a":"Identidad"},{"subject":"Álgebra Lineal","q":"¿Cómo se calcula la matriz A²?","a":"Multiplicando la matriz A por sí misma (A · A)."},{"subject":"Álgebra Lineal","q":"En una combinación lineal c₁A₁ + c₂A₂, ¿qué nombre reciben las constantes c₁ y c₂?","a":"Coeficientes."},{"subject":"Álgebra Lineal","q":"¿Bajo qué condición se puede realizar la resta de matrices A - B?","a":"Cuando A y B tienen el mismo tamaño."},{"subject":"Álgebra Lineal","q":"Si A es de 3 × 2 y B es de 2 × 3, ¿de qué tamaño es BA?","a":"2 × 2."},{"subject":"Álgebra Lineal","q":"¿Cuál es el elemento neutro de la multiplicación de matrices cuadradas de orden n?","a":"La matriz identidad Iₙ."},{"subject":"Álgebra Lineal","q":"¿Qué indica el primer subíndice i en la notación de un elemento aᵢⱼ?","a":"El número de la fila (renglón) donde se encuentra el elemento."},{"subject":"Álgebra Lineal","q":"¿Qué indica el segundo subíndice j en la notación de un elemento aᵢⱼ?","a":"El número de la columna donde se encuentra el elemento."},{"subject":"Álgebra Lineal","q":"¿Cuál es el resultado de (A+B+C)ᵀ?","a":"Aᵀ + Bᵀ + Cᵀ."},{"subject":"Álgebra Lineal","q":"En el método de eliminación, ¿qué significa que una ecuación resulte en 0 = 21?","a":"Que el sistema no tiene solución (es inconsistente)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se define un número primo según el texto?","a":"Es un entero positivo p diferente de 1 cuyos únicos factores positivos son 1 y p."},{"subject":"Álgebra, Trig. y Geom.","q":"Establezca el Teorema Fundamental de la Aritmética.","a":"Todo entero positivo diferente de 1 se puede expresar como producto de números primos de forma única."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué condición debe cumplir un número real para ser considerado racional?","a":"Debe poder expresarse en la forma (a/b), donde a y b son enteros y b ≠ 0."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué característica distingue a las representaciones decimales de los números irracionales?","a":"Sus representaciones decimales son siempre no finitas y no periódicas."},{"subject":"Álgebra, Trig. y Geom.","q":"Nombre de la propiedad: a(b + c) = ab + ac.","a":"Propiedad distributiva de la multiplicación sobre la adición."},{"subject":"Álgebra, Trig. y Geom.","q":"Nombre de la propiedad: a + (b + c) = (a + b) + c.","a":"Propiedad asociativa de la adición."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es el elemento neutro aditivo en el sistema de los números reales?","a":"El número 0, tal que a + 0 = a para todo número real a."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se define el inverso multiplicativo o recíproco de un número real a ≠ 0?","a":"Es el número a⁻¹ o (1/a) tal que a · ≤ft((1/a)) = 1."},{"subject":"Álgebra, Trig. y Geom.","q":"Establezca el Teorema del factor cero.","a":"Si ab = 0, entonces a = 0 o b = 0."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es el resultado de la operación -(-a)?","a":"Es igual a a."},{"subject":"Álgebra, Trig. y Geom.","q":"Defina formalmente la operación de sustracción a - b.","a":"Se define como la suma del negativo de b: a + (-b)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Por qué la división entre cero no está definida en los números reales?","a":"Porque el número 0 no tiene inverso multiplicativo."},{"subject":"Álgebra, Trig. y Geom.","q":"En una recta numérica, ¿qué significa la relación a < b en términos de posición?","a":"Significa que el punto A está a la izquierda del punto B."},{"subject":"Álgebra, Trig. y Geom.","q":"Establezca la Ley de tricotomía para números reales.","a":"Para cualquier par de números reales a y b, se cumple exactamente una de estas: a = b, a < b, o a > b."},{"subject":"Álgebra, Trig. y Geom.","q":"Si un cociente (a/b) es negativo, ¿qué se puede afirmar sobre los signos de a y b?","a":"Tienen signos contrarios (uno es positivo y el otro es negativo)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué significa que una desigualdad sea 'continua' como en a < b < c?","a":"Significa que b está entre a y c, cumpliendo simultáneamente que a < b y b < c."},{"subject":"Álgebra, Trig. y Geom.","q":"Defina el valor absoluto |a| si a < 0.","a":"Es igual a -a (el negativo de a)."},{"subject":"Álgebra, Trig. y Geom.","q":"Propiedad: |-a| = …","a":"|a| (para todo número real a)."},{"subject":"Álgebra, Trig. y Geom.","q":"Fórmula para la distancia d(A, B) entre dos puntos con coordenadas a y b en una recta numérica.","a":"d(A, B) = |b - a|."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es la estructura de un número positivo escrito en forma científica?","a":"c × 10ⁿ, donde 1 ≤ c < 10 y n es un entero."},{"subject":"Álgebra, Trig. y Geom.","q":"Si a se escribe como c × 10ⁿ y c se redondea a k lugares decimales, ¿a cuántas cifras significativas es preciso a?","a":"A k + 1 cifras significativas."},{"subject":"Álgebra, Trig. y Geom.","q":"En la expresión exponencial aⁿ, ¿qué nombre reciben a y n?","a":"a es la base y n es el exponente."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es el valor de a⁰ para cualquier número real a ≠ 0?","a":"1."},{"subject":"Álgebra, Trig. y Geom.","q":"Defina a⁻ⁿ para un entero positivo n y a ≠ 0.","a":"(1/aⁿ)."},{"subject":"Álgebra, Trig. y Geom.","q":"Ley de exponentes: aᵐ · aⁿ = …","a":"aᵐ⁺ⁿ."},{"subject":"Álgebra, Trig. y Geom.","q":"Ley de exponentes: (aᵐ)ⁿ = …","a":"aᵐⁿ."},{"subject":"Álgebra, Trig. y Geom.","q":"Ley de exponentes: (ab)ⁿ = …","a":"aⁿ bⁿ."},{"subject":"Álgebra, Trig. y Geom.","q":"Ley de exponentes: (aᵐ/aⁿ) si m > n.","a":"aᵐ⁻ⁿ."},{"subject":"Álgebra, Trig. y Geom.","q":"Teorema de exponentes negativos: ≤ft((a/b))⁻ⁿ = …","a":"≤ft((b/a))ⁿ."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Bajo qué condiciones ⁿ√(a) no es un número real?","a":"Cuando a < 0 y n es un entero positivo par."},{"subject":"Álgebra, Trig. y Geom.","q":"Propiedad de radicales: ⁿ√(aⁿ) si n es par.","a":"|a|."},{"subject":"Álgebra, Trig. y Geom.","q":"Propiedad de radicales: ⁿ√(aⁿ) si n es impar.","a":"a."},{"subject":"Álgebra, Trig. y Geom.","q":"Ley de radicales: ⁿ√(ab) = …","a":"ⁿ√(a) · ⁿ√(b) (siempre que las raíces existan)."},{"subject":"Álgebra, Trig. y Geom.","q":"Ley de radicales: ⁿ√(ⁿ√(a)) = …","a":"ⁿ√(a)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué significa simplificar un radical?","a":"Eliminar factores del radical hasta que ningún factor del radicando tenga un exponente mayor o igual al índice y el índice sea el más bajo posible."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué proceso se utiliza para eliminar un radical del denominador de 1ⁿ√(aᵏ) con k < n?","a":"Multiplicar numerador y denominador por [n]aⁿ⁻ᵏ."},{"subject":"Álgebra, Trig. y Geom.","q":"Defina el exponente racional a^(m/n) en términos de radicales.","a":"(ⁿ√(a))ᵐ o ⁿ√(aᵐ)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es un monomio en x?","a":"Es una expresión de la forma axⁿ, donde a es un número real y n es un entero no negativo."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se define el grado de un polinomio en x?","a":"Es el exponente más alto de la variable x cuyo coeficiente no sea cero."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es la convención sobre el grado del polinomio cero?","a":"Su grado es indefinido."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es un polinomio constante?","a":"Es un polinomio de grado 0 (número real diferente de cero) o el polinomio cero."},{"subject":"Álgebra, Trig. y Geom.","q":"Fórmula del producto: (x+y)(x-y) = …","a":"x² - y²."},{"subject":"Álgebra, Trig. y Geom.","q":"Expansión del binomio al cuadrado: (x+y)² = …","a":"x² + 2xy + y²."},{"subject":"Álgebra, Trig. y Geom.","q":"Expansión del cubo de una diferencia: (x-y)³ = …","a":"x³ - 3x²y + 3xy² - y³."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué significa factorizar un polinomio?","a":"Expresarlo como producto de polinomios irreducibles."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuándo se dice que un polinomio es irreducible sobre un conjunto S?","a":"Cuando no se puede escribir como producto de dos polinomios de grado positivo con coeficientes en S."},{"subject":"Álgebra, Trig. y Geom.","q":"Fórmula de factorización para la diferencia de cubos x³ - y³.","a":"(x-y)(x² + xy + y²)."},{"subject":"Álgebra, Trig. y Geom.","q":"Fórmula de factorización para la suma de cubos x³ + y³.","a":"(x+y)(x² - xy + y²)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿En qué consiste el método de factorización por agrupación?","a":"Agrupar términos de una suma para poder extraer factores comunes usando propiedades distributivas."},{"subject":"Álgebra, Trig. y Geom.","q":"Defina 'expresión racional'.","a":"Es un cociente (p/q) de dos polinomios p y q."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es el dominio de una expresión racional (p/q)?","a":"Todos los números reales excepto aquellos que hacen que el denominador q sea cero."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuándo está una expresión racional simplificada o reducida a su mínima expresión?","a":"Cuando el numerador y el denominador no tienen factores comunes de grado positivo ni factores comunes enteros mayores a 1."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es el mínimo común denominador (mcd) de dos expresiones racionales?","a":"Es el producto de los factores primos diferentes de los denominadores, usando el máximo exponente de cada factor."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es una fracción compleja?","a":"Es un cociente en el que el numerador, el denominador o ambos son expresiones fraccionarias."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se racionaliza el denominador de 1√(x) + √(y)?","a":"Multiplicando numerador y denominador por el conjugado √(x) - √(y)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Por qué es útil racionalizar numeradores en el contexto del cálculo?","a":"Para evitar formas indeterminadas como (0/0) cuando una variable tiende a un valor específico."},{"subject":"Álgebra, Trig. y Geom.","q":"¿A qué rama de las matemáticas se atribuye el origen de la palabra 'álgebra'?","a":"Al título del libro del siglo IX escrito por el matemático árabe Al-Juarismi."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué representa una variable en una expresión algebraica?","a":"Una letra que puede representar cualquier número de un conjunto dado."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es el coeficiente principal de un polinomio?","a":"Es el coeficiente del término que contiene la máxima potencia de la variable."},{"subject":"Álgebra, Trig. y Geom.","q":"Propiedad de la igualdad: si a = b y c es cualquier real, entonces ac = …","a":"bc."},{"subject":"Álgebra, Trig. y Geom.","q":"Identifique el error común al intentar simplificar √(a² + b²).","a":"Suponer que es igual a a + b (esto es falso)."},{"subject":"Álgebra, Trig. y Geom.","q":"En notación científica, ¿qué indica un exponente negativo en la potencia de 10?","a":"Indica que el punto decimal debe moverse hacia la izquierda."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es la distancia entre el origen O y un punto A con coordenada a?","a":"|a|."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se determina el signo de x² para cualquier x ≠ 0?","a":"Siempre es positivo."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es el 'radicando' en una expresión radical?","a":"Es el número o expresión que se encuentra dentro del signo del radical."},{"subject":"Álgebra, Trig. y Geom.","q":"Condición para racionalizar ⁿ√(aᵏ): ¿qué relación debe haber entre k y n?","a":"k < n."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué tipo de número es π (la razón entre la circunferencia y el diámetro)?","a":"Un número irracional."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se define el inverso aditivo de a?","a":"Es el número -a tal que a + (-a) = 0."},{"subject":"Álgebra, Trig. y Geom.","q":"Si a y b tienen el mismo signo, ¿qué signo tiene el producto ab?","a":"Positivo."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es un trinomio?","a":"Es un polinomio formado por la suma de tres monomios."},{"subject":"Álgebra, Trig. y Geom.","q":"Al multiplicar binomios, ¿qué regla mnemotécnica se suele usar?","a":"El método distributivo (a veces llamado FOIL en inglés)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se llaman los números enteros no negativos?","a":"Números naturales combinados con el 0."},{"subject":"Álgebra, Trig. y Geom.","q":"Propiedad: a - (b - c) = …","a":"a - b + c."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es el máximo común factor (mfc) de un polinomio?","a":"El producto de los factores que aparecen en cada término con su menor exponente."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cuál es la principal utilidad de la factorización por agrupación?","a":"Factorizar sumas que contienen cuatro o más términos."},{"subject":"Álgebra, Trig. y Geom.","q":"Si a > 0, ¿qué es √(a)?","a":"El número real positivo b tal que b² = a."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Cómo se escribe el recíproco de (a/b)?","a":"(b/a) (siempre que a, b ≠ 0)."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué sucede con el grado de un polinomio al multiplicarlo por otro polinomio de grado m?","a":"El grado resultante es la suma de los grados de los polinomios originales."},{"subject":"Álgebra, Trig. y Geom.","q":"Defina 'polinomio irreducible'.","a":"Un polinomio que no puede ser factorizado en términos de grado menor."},{"subject":"Álgebra, Trig. y Geom.","q":"¿Qué es un conjunto en matemáticas?","a":"Una colección de objetos llamados elementos."},{"subject":"Álgebra, Trig. y Geom.","q":"Propiedad distributiva: (a+b)c = …","a":"ac + bc."},{"subject":"Álgebra, Trig. y Geom.","q":"Si x < 0 y y > 0, ¿qué signo tiene (x/y)?","a":"Negativo."}];
+
+let state = {
+  filter: 'all',
+  deck: [],       // indices into ALL_CARDS for current filter
+  order: [],      // shuffled order of deck indices
+  pos: 0,         // current position in order
+  correct: new Set(),
+  incorrect: new Set(),
+  flipped: false,
+  shuffled: false,
+};
+
+function getFilteredCards() {
+  if (state.filter === 'all') return ALL_CARDS.map((_,i) => i);
+  return ALL_CARDS.map((_,i) => i).filter(i => ALL_CARDS[i].subject === state.filter);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function initDeck(keepProgress = false) {
+  state.deck = getFilteredCards();
+  if (state.shuffled) state.order = shuffle(state.deck);
+  else state.order = [...state.deck];
+  state.pos = 0;
+  if (!keepProgress) {
+    state.correct = new Set();
+    state.incorrect = new Set();
+  }
+  state.flipped = false;
+  render();
+}
+
+function render() {
+  const total = state.order.length;
+  const cardEl = document.getElementById('card');
+  const emptyEl = document.getElementById('empty-state');
+  const actionEl = document.getElementById('action-area');
+
+  if (total === 0) {
+    emptyEl.classList.add('show');
+    actionEl.style.display = 'none';
+    document.getElementById('card-wrap').style.display = 'none';
+    updateProgress();
+    return;
+  }
+  emptyEl.classList.remove('show');
+  actionEl.style.display = 'flex';
+  document.getElementById('card-wrap').style.display = 'block';
+
+  const idx = state.order[state.pos];
+  const card = ALL_CARDS[idx];
+
+  document.getElementById('card-question').textContent = card.q;
+  document.getElementById('card-answer').textContent = card.a;
+  document.getElementById('card-subject-front').textContent = card.subject;
+  document.getElementById('card-subject-back').textContent = card.subject;
+  document.getElementById('card-counter').textContent = `${state.pos+1} / ${total}`;
+
+  // Flip state
+  cardEl.classList.toggle('flipped', state.flipped);
+
+  // Action buttons
+  document.getElementById('btn-correct').disabled = !state.flipped;
+  document.getElementById('btn-incorrect').disabled = !state.flipped;
+
+  // Prev/next
+  document.getElementById('btn-prev').disabled = state.pos === 0;
+  document.getElementById('btn-next').disabled = state.pos === total - 1;
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = state.order.length;
+  const correct = state.order.filter(i => state.correct.has(i)).length;
+  const incorrect = state.order.filter(i => state.incorrect.has(i)).length;
+  const remaining = total - correct - incorrect;
+
+  document.getElementById('stat-correct').textContent = correct;
+  document.getElementById('stat-incorrect').textContent = incorrect;
+  document.getElementById('stat-remaining').textContent = remaining;
+  document.getElementById('stat-total-label').textContent = total ? `de ${total} tarjetas` : '';
+
+  const cp = total ? (correct/total*100) : 0;
+  const ip = total ? (incorrect/total*100) : 0;
+  document.getElementById('prog-correct').style.width = cp + '%';
+  document.getElementById('prog-incorrect').style.width = ip + '%';
+}
+
+function flipCard() {
+  if (state.order.length === 0) return;
+  state.flipped = !state.flipped;
+  document.getElementById('card').classList.toggle('flipped', state.flipped);
+  document.getElementById('btn-correct').disabled = !state.flipped;
+  document.getElementById('btn-incorrect').disabled = !state.flipped;
+}
+
+function markCard(isCorrect) {
+  const idx = state.order[state.pos];
+  if (isCorrect) {
+    state.correct.add(idx);
+    state.incorrect.delete(idx);
+  } else {
+    state.incorrect.add(idx);
+    state.correct.delete(idx);
+  }
+
+  // Check completion
+  const total = state.order.length;
+  const done = state.order.filter(i => state.correct.has(i) || state.incorrect.has(i)).length;
+  
+  updateProgress();
+
+  if (done === total && total > 0) {
+    const correctCount = state.order.filter(i => state.correct.has(i)).length;
+    document.getElementById('celebration-msg').textContent =
+      `Completaste las ${total} tarjetas de "${state.filter === 'all' ? 'todas las materias' : state.filter}" con ${correctCount} correctas y ${total-correctCount} incorrectas.`;
+    document.getElementById('celebration').classList.add('show');
+    return;
+  }
+
+  // Auto-advance
+  if (state.pos < state.order.length - 1) {
+    state.pos++;
+    state.flipped = false;
+    render();
+  } else {
+    render();
+  }
+}
+
+function navigate(dir) {
+  const newPos = state.pos + dir;
+  if (newPos < 0 || newPos >= state.order.length) return;
+  state.pos = newPos;
+  state.flipped = false;
+  render();
+}
+
+function hideCelebration() {
+  document.getElementById('celebration').classList.remove('show');
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.filter = btn.dataset.filter;
+    initDeck(false);
+  });
+});
+
+// Shuffle
+document.getElementById('btn-shuffle').addEventListener('click', () => {
+  state.shuffled = true;
+  state.order = shuffle(state.deck);
+  state.pos = 0;
+  state.flipped = false;
+  render();
+});
+
+// Reset
+document.getElementById('btn-reset').addEventListener('click', () => {
+  initDeck(false);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+  else if (e.code === 'ArrowRight') navigate(1);
+  else if (e.code === 'ArrowLeft') navigate(-1);
+  else if (e.key === 's' || e.key === 'S') { if (state.flipped) markCard(true); }
+  else if (e.key === 'n' || e.key === 'N') { if (state.flipped) markCard(false); }
+});
+
+// Init
+initDeck(false);
+</script>
+</body>
+</html>
